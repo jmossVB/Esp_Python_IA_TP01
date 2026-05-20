@@ -5,6 +5,12 @@ st.set_page_config(
     page_icon="🖥️",
     layout="wide",
 )
-st.title("Mi primera aplicacion en python")
-st.sidebar.title("Parametros")
-st.write("Elaborado por jmoss")
+
+pagina = st.sidebar.selectbox(
+    "📂 Navegación",
+    ["🏠 Home", "📊 Ejercicio 1", "🧮 Ejercicio 2", "⚙️ Ejercicio 3", "🗄️ Ejercicio 4"],
+)
+
+#st.title("Mi primera aplicacion en python")
+#st.sidebar.title("Parametros")
+#st.write("Elaborado por jmoss")
