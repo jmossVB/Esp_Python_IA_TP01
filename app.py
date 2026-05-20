@@ -2,6 +2,15 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+from libreria_funciones_proyecto1 import (
+    calcular_disponibilidad_sistema,
+    calcular_tiempo_transferencia_archivo,
+    calcular_tasa_error_transacciones,
+    calcular_almacenamiento_respaldo,
+    calcular_metricas_clasificacion,
+)
+from libreri_a_clases_proyecto1 import Servidor
+
 st.set_page_config(
     page_title="Proyecto 1 – Aplicación en Streamlit",
     page_icon="🖥️",
@@ -338,3 +347,141 @@ elif pagina == "⚙️ Ejercicio 3":
             st.rerun()
     else:
         st.info("Aún no hay cálculos en el historial.")
+
+elif pagina == "🗄️ Ejercicio 4":
+    st.title("🗄️ Ejercicio 4 – Gestión de Servidores (CRUD con clase Servidor)")
+
+    st.markdown(
+        """
+        **Descripción:** CRUD completo usando la clase `Servidor` de `libreri_a_clases_proyecto1.py`.
+        Puedes **Crear**, **Leer**, **Actualizar** y **Eliminar** registros de servidores.
+        """
+    )
+    st.markdown("---")
+
+    # Inicializar almacenamiento de servidores
+    if "servidores" not in st.session_state:
+        st.session_state.servidores = {}  # dict: nombre → dict de atributos
+
+    tabs = st.tabs(["➕ Crear", "📋 Ver todos", "✏️ Actualizar", "🗑️ Eliminar"])
+
+    # ── TAB CREAR
+    with tabs[0]:
+        st.subheader("➕ Registrar nuevo servidor")
+        with st.container():
+            nombre_sv = st.text_input("Nombre del servidor", placeholder="Ej: web-server-01")
+            col1, col2 = st.columns(2)
+            with col1:
+                tiempo_total = st.number_input("Tiempo total del período (h)", min_value=0.1, value=720.0, step=1.0, key="c_tt")
+                almacenamiento_total = st.number_input("Almacenamiento total (GB)", min_value=0.1, value=500.0, step=10.0, key="c_at")
+            with col2:
+                tiempo_caida = st.number_input("Tiempo de caída (h)", min_value=0.0, value=0.0, step=0.1, key="c_tc")
+                almacenamiento_usado = st.number_input("Almacenamiento usado (GB)", min_value=0.0, value=120.0, step=5.0, key="c_au")
+
+            if st.button("💾 Crear servidor", use_container_width=True):
+                if nombre_sv.strip() == "":
+                    st.warning("⚠️ Ingresa el nombre del servidor.")
+                elif nombre_sv.strip() in st.session_state.servidores:
+                    st.error("❌ Ya existe un servidor con ese nombre.")
+                else:
+                    try:
+                        sv = Servidor(nombre_sv.strip(), tiempo_total, tiempo_caida, almacenamiento_total, almacenamiento_usado)
+                        st.session_state.servidores[nombre_sv.strip()] = {
+                            "nombre": nombre_sv.strip(),
+                            "tiempo_total_h": tiempo_total,
+                            "tiempo_caida_h": tiempo_caida,
+                            "almacenamiento_total_gb": almacenamiento_total,
+                            "almacenamiento_usado_gb": almacenamiento_usado,
+                            **sv.resumen(),
+                        }
+                        st.success(f"✅ Servidor '{nombre_sv.strip()}' creado correctamente.")
+                    except ValueError as e:
+                        st.error(f"Error de validación: {e}")
+
+    # ── TAB VER TODOS
+    with tabs[1]:
+        st.subheader("📋 Servidores registrados")
+        if st.session_state.servidores:
+            filas = []
+            for sv_data in st.session_state.servidores.values():
+                filas.append({
+                    "Nombre": sv_data["nombre"],
+                    "Disponibilidad (%)": sv_data["disponibilidad_pct"],
+                    "Uso Almac. (%)": sv_data["uso_almacenamiento_pct"],
+                    "Estado": sv_data["estado"],
+                    "Total Almac. (GB)": sv_data["almacenamiento_total_gb"],
+                    "Usado (GB)": sv_data["almacenamiento_usado_gb"],
+                })
+            df_sv = pd.DataFrame(filas)
+
+            # Colorear estado
+            def color_estado(val):
+                colores = {"Óptimo": "background-color: #d4edda", "Advertencia": "background-color: #fff3cd", "Crítico": "background-color: #f8d7da"}
+                return colores.get(val, "")
+
+            st.dataframe(
+                df_sv.style.applymap(color_estado, subset=["Estado"]),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+            # Métricas globales
+            st.markdown("---")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("🖥️ Total servidores", len(filas))
+            optimos = sum(1 for r in filas if r["Estado"] == "Óptimo")
+            c2.metric("✅ En estado Óptimo", optimos)
+            criticos = sum(1 for r in filas if r["Estado"] == "Crítico")
+            c3.metric("🚨 En estado Crítico", criticos)
+        else:
+            st.info("No hay servidores registrados aún. Ve a ➕ Crear para empezar.")
+
+    # ── TAB ACTUALIZAR
+    with tabs[2]:
+        st.subheader("✏️ Actualizar servidor existente")
+        if not st.session_state.servidores:
+            st.info("No hay servidores para actualizar.")
+        else:
+            sv_nombre = st.selectbox("Selecciona el servidor a actualizar", list(st.session_state.servidores.keys()), key="upd_select")
+            sv_actual = st.session_state.servidores[sv_nombre]
+
+            st.markdown(f"**Estado actual:** `{sv_actual['estado']}` | Disponibilidad: `{sv_actual['disponibilidad_pct']}%` | Uso almac.: `{sv_actual['uso_almacenamiento_pct']}%`")
+            st.markdown("Modifica los valores que necesites:")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                new_tt = st.number_input("Tiempo total (h)", min_value=0.1, value=float(sv_actual["tiempo_total_h"]), key="u_tt")
+                new_at = st.number_input("Almacenamiento total (GB)", min_value=0.1, value=float(sv_actual["almacenamiento_total_gb"]), key="u_at")
+            with col2:
+                new_tc = st.number_input("Tiempo caída (h)", min_value=0.0, value=float(sv_actual["tiempo_caida_h"]), key="u_tc")
+                new_au = st.number_input("Almacenamiento usado (GB)", min_value=0.0, value=float(sv_actual["almacenamiento_usado_gb"]), key="u_au")
+
+            if st.button("💾 Guardar cambios", use_container_width=True):
+                try:
+                    sv_upd = Servidor(sv_nombre, new_tt, new_tc, new_at, new_au)
+                    st.session_state.servidores[sv_nombre] = {
+                        "nombre": sv_nombre,
+                        "tiempo_total_h": new_tt,
+                        "tiempo_caida_h": new_tc,
+                        "almacenamiento_total_gb": new_at,
+                        "almacenamiento_usado_gb": new_au,
+                        **sv_upd.resumen(),
+                    }
+                    st.success(f"✅ Servidor '{sv_nombre}' actualizado. Nuevo estado: **{sv_upd.estado_servidor()}**")
+                except ValueError as e:
+                    st.error(f"Error de validación: {e}")
+
+    # ── TAB ELIMINAR
+    with tabs[3]:
+        st.subheader("🗑️ Eliminar servidor")
+        if not st.session_state.servidores:
+            st.info("No hay servidores para eliminar.")
+        else:
+            sv_del = st.selectbox("Selecciona el servidor a eliminar", list(st.session_state.servidores.keys()), key="del_select")
+            sv_info = st.session_state.servidores[sv_del]
+            st.warning(f"⚠️ Estás a punto de eliminar: **{sv_del}** (Estado: {sv_info['estado']}). Esta acción no se puede deshacer.")
+
+            if st.button("🗑️ Confirmar eliminación", use_container_width=True):
+                del st.session_state.servidores[sv_del]
+                st.success(f"✅ Servidor '{sv_del}' eliminado correctamente.")
+                st.rerun()
