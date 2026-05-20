@@ -18,7 +18,7 @@ pagina = st.sidebar.selectbox(
 
 if pagina == "🏠 Home":
     st.title("🖥️ Proyecto 1 – Fundamentos de Programación en Python")
-    st.subheader("Especialización en Python for Analytics · Módulo 1 – Python Fundamentals")
+    st.subheader("Especialización en Python potenciado con IA · Módulo 1 – Python Fundamentals")
     st.markdown("---")
 
     col1, col2 = st.columns([2, 1])
