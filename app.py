@@ -181,3 +181,160 @@ elif pagina == "🧮 Ejercicio 2":
             c2.metric("💰 Valor total inventario", f"${totales.sum():,.2f}")
         else:
             st.info("Aún no hay equipos registrados.")
+
+elif pagina == "⚙️ Ejercicio 3":
+    st.title("⚙️ Ejercicio 3 – Calculadoras TI (librería externa)")
+
+    st.markdown(
+        """
+        **Descripción:** Uso de funciones del área de **Tecnología / Informática** desde `libreria_funciones_proyecto1.py`.
+        Selecciona una función, ingresa los parámetros y ejecuta el cálculo.
+        Los resultados se guardan en un historial.
+        """
+    )
+    st.markdown("---")
+
+    # Inicializar historial
+    if "historial_funciones" not in st.session_state:
+        st.session_state.historial_funciones = []
+
+    FUNCIONES = {
+        "Disponibilidad del sistema": "disponibilidad",
+        "Tiempo de transferencia de archivo": "transferencia",
+        "Tasa de error en transacciones": "tasa_error",
+        "Almacenamiento para respaldo": "almacenamiento",
+        "Métricas de clasificación ML (Precisión / Recall / F1)": "metricas_ml",
+    }
+
+    funcion_seleccionada = st.selectbox("🔧 Selecciona una función", list(FUNCIONES.keys()))
+    clave = FUNCIONES[funcion_seleccionada]
+
+    st.markdown("#### 📥 Parámetros de entrada")
+    resultado = None
+
+    # ── Disponibilidad del sistema
+    if clave == "disponibilidad":
+        st.markdown("Calcula qué porcentaje del tiempo un sistema estuvo disponible (uptime).")
+        tiempo_total = st.number_input("Tiempo total del período (horas)", min_value=0.1, value=720.0, step=1.0)
+        tiempo_caida = st.number_input("Tiempo de caída (horas)", min_value=0.0, value=2.0, step=0.1)
+
+        if st.button("▶️ Calcular", use_container_width=True):
+            try:
+                resultado = calcular_disponibilidad_sistema(tiempo_total, tiempo_caida)
+                st.metric("Disponibilidad del sistema", f"{resultado['disponibilidad_pct']}%")
+                if resultado["disponibilidad_pct"] >= 99.9:
+                    st.success("✅ Excelente disponibilidad (≥ 99.9% – nivel enterprise)")
+                elif resultado["disponibilidad_pct"] >= 99.0:
+                    st.info("ℹ️ Buena disponibilidad (≥ 99%)")
+                else:
+                    st.warning("⚠️ Disponibilidad por debajo del estándar")
+                st.session_state.historial_funciones.append({
+                    "Función": funcion_seleccionada,
+                    "Parámetros": f"Total={tiempo_total}h, Caída={tiempo_caida}h",
+                    **resultado,
+                })
+            except ValueError as e:
+                st.error(f"Error: {e}")
+
+    # ── Tiempo de transferencia
+    elif clave == "transferencia":
+        st.markdown("Estima cuánto tardará en transferirse un archivo según el ancho de banda.")
+        tamano_mb = st.number_input("Tamaño del archivo (MB)", min_value=0.01, value=500.0, step=1.0)
+        velocidad_mbps = st.number_input("Velocidad de red (Mbps)", min_value=0.01, value=100.0, step=1.0)
+
+        if st.button("▶️ Calcular", use_container_width=True):
+            try:
+                resultado = calcular_tiempo_transferencia_archivo(tamano_mb, velocidad_mbps)
+                c1, c2 = st.columns(2)
+                c1.metric("⏱️ Tiempo estimado (seg)", f"{resultado['tiempo_segundos']} s")
+                c2.metric("⏱️ Tiempo estimado (min)", f"{resultado['tiempo_minutos']} min")
+                st.session_state.historial_funciones.append({
+                    "Función": funcion_seleccionada,
+                    "Parámetros": f"Archivo={tamano_mb}MB, Velocidad={velocidad_mbps}Mbps",
+                    **resultado,
+                })
+            except ValueError as e:
+                st.error(f"Error: {e}")
+
+    # ── Tasa de error en transacciones
+    elif clave == "tasa_error":
+        st.markdown("Calcula qué porcentaje de transacciones fallaron en un sistema.")
+        fallidas = st.number_input("Transacciones fallidas", min_value=0, value=12, step=1)
+        totales = st.number_input("Transacciones totales", min_value=1, value=10000, step=100)
+
+        if st.button("▶️ Calcular", use_container_width=True):
+            try:
+                resultado = calcular_tasa_error_transacciones(int(fallidas), int(totales))
+                c1, c2 = st.columns(2)
+                c1.metric("❌ Tasa de error", f"{resultado['tasa_error_pct']}%")
+                c2.metric("✅ Tasa de éxito", f"{resultado['tasa_exito_pct']}%")
+                if resultado["tasa_error_pct"] <= 0.1:
+                    st.success("✅ Tasa de error excelente (≤ 0.1%)")
+                elif resultado["tasa_error_pct"] <= 1.0:
+                    st.info("ℹ️ Tasa de error aceptable")
+                else:
+                    st.error("🚨 Tasa de error alta — requiere atención")
+                st.session_state.historial_funciones.append({
+                    "Función": funcion_seleccionada,
+                    "Parámetros": f"Fallidas={int(fallidas)}, Totales={int(totales)}",
+                    **resultado,
+                })
+            except ValueError as e:
+                st.error(f"Error: {e}")
+
+    # ── Almacenamiento para respaldo
+    elif clave == "almacenamiento":
+        st.markdown("Estima el espacio de almacenamiento necesario para respaldar archivos de usuarios.")
+        n_usuarios = st.number_input("Número de usuarios", min_value=1, value=100, step=1)
+        archivos_usuario = st.number_input("Archivos por usuario", min_value=1, value=50, step=1)
+        tamano_prom_mb = st.number_input("Tamaño promedio por archivo (MB)", min_value=0.01, value=5.0, step=0.5)
+        factor_respaldo = st.number_input("Factor de respaldo (redundancia)", min_value=1.0, value=2.0, step=0.5,
+                                          help="Ej: 2 = doble copia, 3 = triple copia")
+
+        if st.button("▶️ Calcular", use_container_width=True):
+            try:
+                resultado = calcular_almacenamiento_respaldo(int(n_usuarios), int(archivos_usuario), tamano_prom_mb, factor_respaldo)
+                c1, c2 = st.columns(2)
+                c1.metric("💾 Almacenamiento estimado (MB)", f"{resultado['almacenamiento_estimado_mb']:,}")
+                c2.metric("💾 Almacenamiento estimado (GB)", f"{resultado['almacenamiento_estimado_gb']:,}")
+                st.session_state.historial_funciones.append({
+                    "Función": funcion_seleccionada,
+                    "Parámetros": f"Usuarios={int(n_usuarios)}, Archivos={int(archivos_usuario)}, Factor={factor_respaldo}x",
+                    **resultado,
+                })
+            except ValueError as e:
+                st.error(f"Error: {e}")
+
+    # ── Métricas ML
+    elif clave == "metricas_ml":
+        st.markdown("Evalúa el rendimiento de un modelo de clasificación con Precisión, Recall y F1-Score.")
+        tp = st.number_input("True Positives (TP)", min_value=0, value=85, step=1)
+        fp = st.number_input("False Positives (FP)", min_value=0, value=10, step=1)
+        fn = st.number_input("False Negatives (FN)", min_value=0, value=5, step=1)
+
+        if st.button("▶️ Calcular", use_container_width=True):
+            try:
+                resultado = calcular_metricas_clasificacion(int(tp), int(fp), int(fn))
+                c1, c2, c3 = st.columns(3)
+                c1.metric("🎯 Precisión", resultado["precision"])
+                c2.metric("📡 Recall", resultado["recall"])
+                c3.metric("⚖️ F1-Score", resultado["f1_score"])
+                st.session_state.historial_funciones.append({
+                    "Función": funcion_seleccionada,
+                    "Parámetros": f"TP={int(tp)}, FP={int(fp)}, FN={int(fn)}",
+                    **resultado,
+                })
+            except ValueError as e:
+                st.error(f"Error: {e}")
+
+    # Historial
+    st.markdown("---")
+    st.subheader("📜 Historial de cálculos")
+    if st.session_state.historial_funciones:
+        df_hist = pd.DataFrame(st.session_state.historial_funciones)
+        st.dataframe(df_hist, use_container_width=True, hide_index=True)
+        if st.button("🗑️ Limpiar historial"):
+            st.session_state.historial_funciones = []
+            st.rerun()
+    else:
+        st.info("Aún no hay cálculos en el historial.")
