@@ -5,12 +5,12 @@ st.set_page_config(
     page_icon="🖥️",
     layout="wide",
 )
-
+st.sidebar.title("Secciones")
 pagina = st.sidebar.selectbox(
     "📂 Navegación",
     ["🏠 Home", "📊 Ejercicio 1", "🧮 Ejercicio 2", "⚙️ Ejercicio 3", "🗄️ Ejercicio 4"],
 )
 
 st.title("PROYECTO 1 – APLICACIÓN EN STREAMLIT")
-st.sidebar.title("Secciones")
+
 st.write("Elaborado por Jose Alex Mosquera Amaro")
