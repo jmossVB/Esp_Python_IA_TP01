@@ -11,6 +11,6 @@ pagina = st.sidebar.selectbox(
     ["🏠 Home", "📊 Ejercicio 1", "🧮 Ejercicio 2", "⚙️ Ejercicio 3", "🗄️ Ejercicio 4"],
 )
 
-#st.title("Mi primera aplicacion en python")
-#st.sidebar.title("Parametros")
-#st.write("Elaborado por jmoss")
+st.title("PROYECTO 1 – APLICACIÓN EN STREAMLIT")
+st.sidebar.title("Secciones")
+st.write("Elaborado por Jose Alex Mosquera Amaro")
