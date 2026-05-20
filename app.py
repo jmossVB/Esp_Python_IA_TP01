@@ -7,9 +7,9 @@ st.set_page_config(
     layout="wide",
 )
 
-st.sidebar.title("Secciones")
-st.title("PROYECTO 1 – APLICACIÓN EN STREAMLIT")
-st.write("Elaborado por Jose Alex Mosquera Amaro")
+# st.sidebar.title("Secciones")
+# st.title("PROYECTO 1 – APLICACIÓN EN STREAMLIT")
+# st.write("Elaborado por Jose Alex Mosquera Amaro")
 
 pagina = st.sidebar.selectbox(
     "📂 Navegación",
