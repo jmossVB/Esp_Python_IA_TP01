@@ -420,7 +420,7 @@ elif pagina == "🗄️ Ejercicio 4":
                 return colores.get(val, "")
 
             st.dataframe(
-                df_sv.style.applymap(color_estado, subset=["Estado"]),
+                df_sv.style.map(color_estado, subset=["Estado"]),
                 use_container_width=True,
                 hide_index=True,
             )
