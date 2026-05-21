@@ -36,7 +36,7 @@ if pagina == "🏠 Home":
     with col1:
         st.markdown("### 👤 Información Personal")
         st.write("**Nombre:** José Alex Mosquera Amaro")
-        st.write("**Módulo:** Módulo 1 – Python Fundamentals")
+        st.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
         st.write("**Curso:** Especialización en Python for Analytics")
         st.write("**Año:** 2026")
         st.markdown("---")
