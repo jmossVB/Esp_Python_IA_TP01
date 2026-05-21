@@ -34,7 +34,7 @@ if pagina == "🏠 Home":
     col1, col2, col3 = st.columns([1, 2, 2])
 
     with col1:
-        st.image("jmosquera.jpeg", width=160, caption="José Alex Mosquera Amaro")
+        st.image("jmosquera.jpeg", width=200)
     with col2:
         st.markdown("### 👤 Información Personal")
         st.write("**Nombre:** José Alex Mosquera Amaro")
