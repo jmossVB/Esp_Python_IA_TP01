@@ -74,7 +74,7 @@ elif pagina == "📊 Ejercicio 1":
     )
     st.markdown("---")
 
-    # Inicializar estado
+
     if "movimientos" not in st.session_state:
         st.session_state.movimientos = []
 
