@@ -31,16 +31,18 @@ if pagina == "🏠 Home":
     st.subheader("Especialización en Python Potenciado con IA · Módulo 1 – Python Fundamentals")
     st.markdown("---")
 
-    col1, col2 = st.columns([2, 1])
+    col1, col2, col3 = st.columns([3, 1])
 
     with col1:
+        st.image("jmosquera.jpeg", width=160, caption="José Alex Mosquera Amaro")
+    with col2:
         st.markdown("### 👤 Información Personal")
         st.write("**Nombre:** José Alex Mosquera Amaro")
         st.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
         st.write("**Curso:** Especialización en Python for Analytics")
         st.write("**Año:** 2026")
         st.markdown("---")
-    with col2:
+    with col3:
         st.markdown("### 🐍 Python for Analytics")
         st.info("Proyecto 1 – Aplicación en Streamlit\n\nMódulo 1: Python Fundamentals")
         st.markdown("**Instructor:** MSc. Carlos Carrillo Villavicencio")
