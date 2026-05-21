@@ -40,9 +40,13 @@ if pagina == "🏠 Home":
         st.write("**Curso:** Especialización en Python for Analytics")
         st.write("**Año:** 2026")
         st.markdown("---")
+    with col2:
+        st.markdown("### 🐍 Python for Analytics")
+        st.info("Proyecto 1 – Aplicación en Streamlit\n\nMódulo 1: Python Fundamentals")
+        st.markdown("**Instructor:** MSc. Carlos Carrillo Villavicencio")
 
-        st.markdown("### 📋 Descripción del proyecto")
-        st.markdown(
+    st.markdown("### 📋 Descripción del proyecto")
+    st.markdown(
             """
             Esta aplicación interactiva integra los conceptos fundamentales del Módulo 1:
             - **Ejercicio 1:** Flujo de caja con listas y `st.session_state`
@@ -51,18 +55,15 @@ if pagina == "🏠 Home":
             - **Ejercicio 4:** Gestión CRUD de servidores con la clase `Servidor`
             """
         )
-
-        st.markdown("### 🛠️ Tecnologías utilizadas")
+    
+    st.markdown("---")
+    
+    st.markdown("### 🛠️ Tecnologías utilizadas")
         tech = {
             "Tecnología": ["Python 3.x", "Streamlit", "NumPy", "Pandas"],
             "Uso": ["Lenguaje base", "Interfaz interactiva", "Arrays numéricos", "DataFrames"],
         }
-        st.dataframe(pd.DataFrame(tech), use_container_width=True, hide_index=True)
-
-    with col2:
-        st.markdown("### 🐍 Python for Analytics")
-        st.info("Proyecto 1 – Aplicación en Streamlit\n\nMódulo 1: Python Fundamentals")
-        st.markdown("**Instructor:** MSc. Carlos Carrillo Villavicencio")
+    st.dataframe(pd.DataFrame(tech), use_container_width=True, hide_index=True)
 
 elif pagina == "📊 Ejercicio 1":
     st.title("📊 Ejercicio 1 – Flujo de Caja con Listas")
