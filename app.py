@@ -12,7 +12,7 @@ from libreria_funciones_proyecto1 import (
 from libreria_clases_proyecto1 import Servidor
 
 st.set_page_config(
-    page_title="Proyecto 1 – Aplicación en Streamlit",
+    page_title="Proyecto 1 – Aplicación Python Potenciado con IA - Jose Mosquera",
     page_icon="🖥️",
     layout="wide",
 )
