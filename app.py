@@ -35,18 +35,18 @@ if pagina == "🏠 Home":
         st.markdown("### 👤 Información Personal")
         st.write("**Nombre:** José Alex Mosquera Amaro")
         st.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
-        st.write("**Curso:** Especialización en Python for Analytics")
         st.write("**Año:** 2026")
         st.markdown("---")
     with col3:
         st.markdown("### 🐍 Python for Analytics")
+        st.write("**Curso:** Especialización en Python for Analytics")
         st.info("Proyecto 1 – Aplicación en Streamlit\n\nMódulo 1: Python Fundamentals")
         st.markdown("**Instructor:** MSc. Carlos Carrillo Villavicencio")
 
     st.markdown("### 📋 Descripción del proyecto")
     st.markdown(
             """
-            Esta aplicación interactiva integra los conceptos fundamentales del Módulo 1:
+            Esta aplicación integra los conceptos fundamentales del Módulo 1 de la Especialización en Python Potenciado con IA:
             - **Ejercicio 1:** Flujo de caja con listas y `st.session_state`
             - **Ejercicio 2:** Registro de equipos TI con arrays NumPy y DataFrames
             - **Ejercicio 3:** Calculadoras de métricas TI usando funciones de librería externa
