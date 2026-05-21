@@ -31,7 +31,7 @@ if pagina == "🏠 Home":
     st.subheader("Especialización en Python Potenciado con IA · Módulo 1 – Python Fundamentals")
     st.markdown("---")
 
-    col1, col2, col3 = st.columns([3, 1])
+    col1, col2, col3 = st.columns([1, 2, 2])
 
     with col1:
         st.image("jmosquera.jpeg", width=160, caption="José Alex Mosquera Amaro")
