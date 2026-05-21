@@ -59,7 +59,7 @@ if pagina == "🏠 Home":
     st.markdown("---")
     
     st.markdown("### 🛠️ Tecnologías utilizadas")
-        tech = {
+    tech = {
             "Tecnología": ["Python 3.x", "Streamlit", "NumPy", "Pandas"],
             "Uso": ["Lenguaje base", "Interfaz interactiva", "Arrays numéricos", "DataFrames"],
         }
