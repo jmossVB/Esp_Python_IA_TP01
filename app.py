@@ -39,7 +39,7 @@ if pagina == "🏠 Home":
         st.write("**Año:** 2026")
         st.markdown("---")
     with col3:
-        st.markdown("### 🐍 Especialización en Python Potenciado con IA")        
+        st.markdown("Especialización en Python Potenciado con IA")        
         st.info("Proyecto 1 - Python Fundamentals")
         st.markdown("**Instructor:** MSc. Carlos Carrillo Villavicencio")
 
