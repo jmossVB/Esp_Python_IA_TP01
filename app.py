@@ -16,14 +16,14 @@ st.set_page_config(
     page_icon="🖥️",
     layout="wide",
 )
-
+st.sidebar.image("DMC.png")
 pagina = st.sidebar.selectbox(
     "📂 Navegación",
     ["🏠 Home", "📊 Ejercicio 1", "🧮 Ejercicio 2", "⚙️ Ejercicio 3", "🗄️ Ejercicio 4"],
 )
 
 if pagina == "🏠 Home":
-    st.sidebar.image("DMC.png")
+    
     st.title("🖥️ Proyecto 1 – Fundamentos de Programación en Python")
     st.subheader("Especialización en Python Potenciado con IA · Módulo 1 – Python Fundamentals")
     st.markdown("---")
