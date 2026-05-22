@@ -64,7 +64,8 @@ if pagina == "🏠 Home":
     st.dataframe(pd.DataFrame(tech), use_container_width=True, hide_index=True)
 
 elif pagina == "📊 Ejercicio 1":
-    st.sidebar.markdown()
+    
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
     st.sidebar.image("jmosquera.jpeg", width=100)
     st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
     st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
@@ -130,6 +131,12 @@ elif pagina == "📊 Ejercicio 1":
             st.info("Aún no hay movimientos registrados. ¡Agrega el primero!")
 
 elif pagina == "🧮 Ejercicio 2":
+    
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
+    st.sidebar.image("jmosquera.jpeg", width=100)
+    st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
+    st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
+    
     st.title("🧮 Ejercicio 2 – Registro de Equipos TI con NumPy y DataFrame")
 
     st.markdown(
@@ -196,6 +203,12 @@ elif pagina == "🧮 Ejercicio 2":
             st.info("Aún no hay equipos registrados.")
 
 elif pagina == "⚙️ Ejercicio 3":
+    
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
+    st.sidebar.image("jmosquera.jpeg", width=100)
+    st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
+    st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
+    
     st.title("⚙️ Ejercicio 3 – Calculadoras TI (librería externa)")
 
     st.markdown(
@@ -353,6 +366,12 @@ elif pagina == "⚙️ Ejercicio 3":
         st.info("Aún no hay cálculos en el historial.")
 
 elif pagina == "🗄️ Ejercicio 4":
+    
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
+    st.sidebar.image("jmosquera.jpeg", width=100)
+    st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
+    st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
+    
     st.title("🗄️ Ejercicio 4 – Gestión de Servidores (CRUD con clase Servidor)")
 
     st.markdown(
