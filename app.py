@@ -23,6 +23,7 @@ pagina = st.sidebar.selectbox(
 )
 
 if pagina == "🏠 Home":
+    st.sidebar.image("DMC.png")
     st.title("🖥️ Proyecto 1 – Fundamentos de Programación en Python")
     st.subheader("Especialización en Python Potenciado con IA · Módulo 1 – Python Fundamentals")
     st.markdown("---")
