@@ -64,6 +64,7 @@ if pagina == "🏠 Home":
     st.dataframe(pd.DataFrame(tech), use_container_width=True, hide_index=True)
 
 elif pagina == "📊 Ejercicio 1":
+    st.sidebar.markdown()
     st.sidebar.image("jmosquera.jpeg", width=100)
     st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
     st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
