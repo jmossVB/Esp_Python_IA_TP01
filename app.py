@@ -1,510 +1,624 @@
-import streamlit as st
-import pandas as pd
+"""
+Caso de Estudio N°1 – BankMarketing EDA
+Especialización Python for Analytics | DMC Institute
+"""
+
+import io
 import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import seaborn as sns
+import streamlit as st
 
-from libreria_funciones_proyecto1 import (
-    calcular_disponibilidad_sistema,
-    calcular_tiempo_transferencia_archivo,
-    calcular_tasa_error_transacciones,
-    calcular_almacenamiento_respaldo,
-    calcular_metricas_clasificacion,
-)
-from libreria_clases_proyecto1 import Servidor
-
-st.set_page_config(
-    page_title="Proyecto 1 – Aplicación Python Potenciado con IA - Jose Mosquera",
-    page_icon="🖥️",
-    layout="wide",
-)
-st.sidebar.image("DMC.png")
-pagina = st.sidebar.selectbox(
-    "📂 Navegación",
-    ["🏠 Home", "📊 Ejercicio 1", "🧮 Ejercicio 2", "⚙️ Ejercicio 3", "🗄️ Ejercicio 4"],
-)
-
-if pagina == "🏠 Home":    
-    st.title("🖥️ Proyecto 1 – Fundamentos de Programación en Python")
-    st.subheader("Especialización en Python Potenciado con IA · Módulo 1 – Python Fundamentals")
-    st.markdown("---")
-
-    col1, col2, col3 = st.columns([1, 2, 2])
-
-    with col1:
-        st.image("jmosquera.jpeg", width=200)
-    with col2:
-        st.markdown("### 👤 Información Personal")
-        st.write("**Nombre:** José Alex Mosquera Amaro")
-        st.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
-        st.write("**Año:** 2026")
-        st.markdown("---")
-    with col3:
-        st.markdown("Especialización en Python Potenciado con IA")
-        st.image("Python_logo.png", width=200)
-        st.info("Proyecto 1 - Python Fundamentals")
-        st.markdown("**Instructor:** MSc. Carlos Carrillo Villavicencio")
-
-    st.markdown("### 📋 Descripción del proyecto")
-    st.markdown(
-            """
-            Esta aplicación integra los conceptos fundamentales del Módulo 1 de la Especialización en Python Potenciado con IA:
-            - **Ejercicio 1:** Flujo de caja con listas y `st.session_state`
-            - **Ejercicio 2:** Registro de equipos TI con arrays NumPy y DataFrames
-            - **Ejercicio 3:** Calculadoras de métricas TI usando funciones de librería externa
-            - **Ejercicio 4:** Gestión CRUD de servidores con la clase `Servidor`
-            """
-        )
-    
-    st.markdown("---")
-    
-    st.markdown("### 🛠️ Tecnologías utilizadas")
-    tech = {
-            "Tecnología": ["Python 3.x", "Streamlit", "NumPy", "Pandas"],
-            "Uso": ["Lenguaje base", "Interfaz interactiva", "Arrays numéricos", "DataFrames"],
-        }
-    st.dataframe(pd.DataFrame(tech), use_container_width=True, hide_index=True)
-
-elif pagina == "📊 Ejercicio 1":
-    
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    st.sidebar.image("jmosquera.jpeg", width=100)
-    st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
-    st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
-    
-    st.title("📊 Ejercicio 1 – Flujo de Caja con Listas")
-
-    st.markdown(
-        """
-        **Descripción:** Módulo para registrar movimientos financieros.
-        Ingresa un concepto, selecciona el tipo de movimiento e indica el valor.
-        La aplicación calcula ingresos, gastos, saldo y determina si el flujo está a favor o en contra.
-        """
-    )
-    st.markdown("---")
+st.set_page_config(page_title="BankMarketing EDA", layout="wide")
 
 
-    if "movimientos" not in st.session_state:
-        st.session_state.movimientos = []
+# ─────────────────────────────────────────────
+# CLASE PRINCIPAL  (POO)
+# ─────────────────────────────────────────────
+class DataAnalyzer:
+    """Encapsula estadísticas descriptivas, clasificación de variables
+    y helpers de visualización para un DataFrame de Pandas."""
 
-    col1, col2 = st.columns([1, 1])
+    def __init__(self, df: pd.DataFrame):
+        self.df = df.copy()
 
-    with col1:
-        st.subheader("➕ Registrar movimiento")
-        concepto = st.text_input("Concepto", placeholder="Ej: Pago de factura AWS")
-        tipo = st.selectbox("Tipo de movimiento", ["Ingreso", "Gasto"])
-        valor = st.number_input("Valor ($)", min_value=0.01, step=0.01, format="%.2f")
+    def classify_variables(self):
+        num = self.df.select_dtypes(include=[np.number]).columns.tolist()
+        cat = self.df.select_dtypes(exclude=[np.number]).columns.tolist()
+        return num, cat
 
-        if st.button("Agregar movimiento", use_container_width=True):
-            if concepto.strip() == "":
-                st.warning("⚠️ Por favor ingresa un concepto.")
-            else:
-                st.session_state.movimientos.append(
-                    {"Concepto": concepto.strip(), "Tipo": tipo, "Valor ($)": round(valor, 2)}
-                )
-                st.success(f"✅ Movimiento '{concepto}' agregado.")
+    def descriptive_stats(self, cols=None):
+        df = self.df[cols] if cols else self.df
+        return df.describe(include="all").T
 
-        if st.button("🗑️ Limpiar todos los movimientos", use_container_width=True):
-            st.session_state.movimientos = []
-            st.info("Lista limpiada.")
+    def missing_summary(self):
+        total = self.df.isnull().sum()
+        percent = (total / len(self.df) * 100).round(2)
+        return pd.DataFrame({"Nulos": total, "Porcentaje (%)": percent}) \
+            .sort_values("Nulos", ascending=False)
 
-    with col2:
-        st.subheader("📋 Resumen del flujo de caja")
+    def fig_distribution(self, col, bins=30):
+        fig, ax = plt.subplots(figsize=(6, 3.5))
+        ax.hist(self.df[col].dropna(), bins=bins, edgecolor="white")
+        ax.set_xlabel(col)
+        ax.set_ylabel("Frecuencia")
+        ax.set_title(f"Distribución de {col}")
+        ax.grid(axis="y", alpha=0.3)
+        fig.tight_layout()
+        return fig
 
-        if st.session_state.movimientos:
-            df = pd.DataFrame(st.session_state.movimientos)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+    def fig_boxplot(self, num_col, cat_col):
+        order = self.df.groupby(cat_col)[num_col].median() \
+            .sort_values(ascending=False).index
+        data_plot = [self.df.loc[self.df[cat_col] == v, num_col].dropna()
+                     for v in order]
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.boxplot(data_plot, labels=order)
+        ax.set_xlabel(cat_col)
+        ax.set_ylabel(num_col)
+        ax.set_title(f"{num_col} por {cat_col}")
+        plt.xticks(rotation=30, ha="right")
+        ax.grid(axis="y", alpha=0.3)
+        fig.tight_layout()
+        return fig
 
-            total_ingresos = sum(m["Valor ($)"] for m in st.session_state.movimientos if m["Tipo"] == "Ingreso")
-            total_gastos = sum(m["Valor ($)"] for m in st.session_state.movimientos if m["Tipo"] == "Gasto")
-            saldo = total_ingresos - total_gastos
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("💰 Total Ingresos", f"${total_ingresos:,.2f}")
-            c2.metric("💸 Total Gastos", f"${total_gastos:,.2f}")
-            c3.metric("🏦 Saldo Final", f"${saldo:,.2f}", delta=f"${saldo:,.2f}")
-
-            st.markdown("---")
-            if saldo >= 0:
-                st.success(f"✅ El flujo de caja está **a favor** con un saldo positivo de ${saldo:,.2f}")
-            else:
-                st.error(f"❌ El flujo de caja está **en contra** con un déficit de ${abs(saldo):,.2f}")
+    def fig_barplot(self, col, top_n=10, horizontal=False):
+        vc = self.df[col].value_counts().head(top_n)
+        fig, ax = plt.subplots(figsize=(7, 4))
+        if horizontal:
+            ax.barh(vc.index[::-1], vc.values[::-1])
+            ax.set_xlabel("Frecuencia")
         else:
-            st.info("Aún no hay movimientos registrados. ¡Agrega el primero!")
+            ax.bar(vc.index, vc.values)
+            ax.set_ylabel("Frecuencia")
+            plt.xticks(rotation=35, ha="right")
+        ax.set_title(f"Distribución de {col}")
+        ax.grid(axis="x" if horizontal else "y", alpha=0.3)
+        fig.tight_layout()
+        return fig
 
-elif pagina == "🧮 Ejercicio 2":
-    
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    st.sidebar.image("jmosquera.jpeg", width=100)
-    st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
-    st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
-    
-    st.title("🧮 Ejercicio 2 – Registro de Equipos TI con NumPy y DataFrame")
+    def fig_crosstab_pct(self, col1, col2):
+        ct = pd.crosstab(self.df[col1], self.df[col2], normalize="index") * 100
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ct.plot(kind="bar", ax=ax)
+        ax.set_xlabel(col1)
+        ax.set_ylabel("Porcentaje (%)")
+        ax.set_title(f"{col1} vs {col2} (% por fila)")
+        ax.legend(title=col2)
+        plt.xticks(rotation=35, ha="right")
+        ax.grid(axis="y", alpha=0.3)
+        fig.tight_layout()
+        return fig
 
-    st.markdown(
-        """
-        **Descripción:** Formulario para registrar equipos tecnológicos del inventario.
-        Los datos se almacenan en arrays NumPy y se convierten en un DataFrame actualizado.
-        """
+    def fig_correlation(self, cols=None):
+        num_cols = cols or self.classify_variables()[0]
+        corr = self.df[num_cols].corr()
+        fig, ax = plt.subplots(figsize=(7, 5))
+        mask = np.triu(np.ones_like(corr, dtype=bool))
+        sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", ax=ax)
+        ax.set_title("Matriz de correlación (numéricas)")
+        fig.tight_layout()
+        return fig
+
+
+# ─────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────
+@st.cache_data
+def load_data(file) -> pd.DataFrame:
+    return pd.read_csv(file, sep=";")
+
+
+def render_fig(fig):
+    st.pyplot(fig)
+    plt.close(fig)
+
+
+def get_df():
+    df = st.session_state.get("df", None)
+    if df is None:
+        st.warning("⚠️ Primero carga el dataset en la sección 'Carga de Datos'.")
+        st.stop()
+    return df
+
+
+# ─────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────
+with st.sidebar:
+    st.title("BankMarketing EDA")
+    menu = st.radio(
+        "Navegar",
+        ["Home",
+         "Carga de Datos",
+         "EDA - Información",
+         "EDA - Distribuciones",
+         "EDA - Bivariado",
+         "EDA - Análisis Dinámico",
+         "Conclusiones"],
     )
     st.markdown("---")
+    st.write("Dataset: BankMarketing.csv")
 
-    # Inicializar arrays en session_state
-    if "eq_nombres" not in st.session_state:
-        st.session_state.eq_nombres = np.array([], dtype=str)
-        st.session_state.eq_categorias = np.array([], dtype=str)
-        st.session_state.eq_precios = np.array([], dtype=float)
-        st.session_state.eq_cantidades = np.array([], dtype=int)
 
-    col1, col2 = st.columns([1, 1])
+# ─────────────────────────────────────────────
+# MÓDULO 1 – HOME
+# ─────────────────────────────────────────────
+if menu == "Home":
+    st.title("Bank Marketing EDA")
+    st.subheader("Análisis Exploratorio de Datos — Campaña Bancaria")
 
-    with col1:
-        st.subheader("➕ Nuevo equipo")
-        nombre = st.text_input("Nombre del equipo", placeholder="Ej: Laptop Dell XPS 15")
-        categoria = st.selectbox("Categoría", ["Laptop", "Servidor", "Switch", "Router", "Monitor", "Otro"])
-        precio = st.number_input("Precio unitario ($)", min_value=0.01, step=0.01, format="%.2f")
-        cantidad = st.number_input("Cantidad", min_value=1, step=1, value=1)
+    st.markdown("### Objetivo del análisis")
+    st.write("""
+    Una institución financiera registró una caída en la efectividad de sus
+    campañas de marketing: de 12% a 8% en los últimos 6 meses.
+    Este proyecto aplica un EDA sobre los datos de la última campaña para
+    identificar patrones, relaciones entre variables y perfiles de clientes
+    con mayor propensión a aceptar el producto ofrecido.
 
-        if st.button("Agregar equipo", use_container_width=True):
-            if nombre.strip() == "":
-                st.warning("⚠️ Ingresa el nombre del equipo.")
-            else:
-                st.session_state.eq_nombres = np.append(st.session_state.eq_nombres, nombre.strip())
-                st.session_state.eq_categorias = np.append(st.session_state.eq_categorias, categoria)
-                st.session_state.eq_precios = np.append(st.session_state.eq_precios, precio)
-                st.session_state.eq_cantidades = np.append(st.session_state.eq_cantidades, cantidad)
-                st.success(f"✅ Equipo '{nombre}' agregado.")
+    El análisis no construye modelos predictivos; el foco está en comprender
+    los datos y extraer insights accionables que orienten decisiones comerciales.
+    """)
 
-        if st.button("🗑️ Limpiar registros", use_container_width=True):
-            st.session_state.eq_nombres = np.array([], dtype=str)
-            st.session_state.eq_categorias = np.array([], dtype=str)
-            st.session_state.eq_precios = np.array([], dtype=float)
-            st.session_state.eq_cantidades = np.array([], dtype=int)
-            st.info("Registros limpiados.")
+    st.markdown("### Sobre el dataset")
+    st.write("""
+    BankMarketing.csv contiene 41,188 registros de clientes contactados en
+    una campaña de depósitos a plazo fijo. Incluye variables demográficas
+    (edad, empleo, educación), financieras (créditos, mora) y de la campaña
+    (canal, duración, intentos). La variable objetivo `y` indica si el cliente
+    suscribió el depósito.
+    """)
 
-    with col2:
-        st.subheader("📋 Inventario registrado")
+    st.markdown("### Autor")
+    st.write("""
+    - **Nombre:** [Tu nombre completo]
+    - **Curso:** Especialización Python for Analytics
+    - **Institución:** DMC Institute
+    - **Año:** 2025
+    """)
 
-        if len(st.session_state.eq_nombres) > 0:
-            totales = st.session_state.eq_precios * st.session_state.eq_cantidades
+    st.markdown("### Tecnologías utilizadas")
+    st.write("Python, Pandas, NumPy, Matplotlib, Seaborn, Streamlit, Programación Orientada a Objetos")
 
-            df_equipos = pd.DataFrame({
-                "Equipo": st.session_state.eq_nombres,
-                "Categoría": st.session_state.eq_categorias,
-                "Precio Unit. ($)": st.session_state.eq_precios,
-                "Cantidad": st.session_state.eq_cantidades,
-                "Total ($)": np.round(totales, 2),
-            })
 
-            st.dataframe(df_equipos, use_container_width=True, hide_index=True)
+# ─────────────────────────────────────────────
+# MÓDULO 2 – CARGA
+# ─────────────────────────────────────────────
+elif menu == "Carga de Datos":
+    st.title("Carga del Dataset")
 
-            c1, c2 = st.columns(2)
-            c1.metric("📦 Total equipos registrados", len(st.session_state.eq_nombres))
-            c2.metric("💰 Valor total inventario", f"${totales.sum():,.2f}")
-        else:
-            st.info("Aún no hay equipos registrados.")
-
-elif pagina == "⚙️ Ejercicio 3":
-    
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    st.sidebar.image("jmosquera.jpeg", width=100)
-    st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
-    st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
-    
-    st.title("⚙️ Ejercicio 3 – Calculadoras TI (librería externa)")
-
-    st.markdown(
-        """
-        **Descripción:** Uso de funciones del área de **Tecnología / Informática** desde `libreria_funciones_proyecto1.py`.
-        Selecciona una función, ingresa los parámetros y ejecuta el cálculo.
-        Los resultados se guardan en un historial.
-        """
+    uploaded = st.file_uploader(
+        "Sube el archivo BankMarketing.csv (separador: punto y coma)",
+        type=["csv"],
     )
-    st.markdown("---")
 
-    # Inicializar historial
-    if "historial_funciones" not in st.session_state:
-        st.session_state.historial_funciones = []
+    if uploaded is None:
+        st.info("Por favor, carga el archivo CSV para continuar.")
+        st.stop()
 
-    FUNCIONES = {
-        "Disponibilidad del sistema": "disponibilidad",
-        "Tiempo de transferencia de archivo": "transferencia",
-        "Tasa de error en transacciones": "tasa_error",
-        "Almacenamiento para respaldo": "almacenamiento",
-        "Métricas de clasificación ML (Precisión / Recall / F1)": "metricas_ml",
-    }
+    df = load_data(uploaded)
+    st.session_state["df"] = df
 
-    funcion_seleccionada = st.selectbox("🔧 Selecciona una función", list(FUNCIONES.keys()))
-    clave = FUNCIONES[funcion_seleccionada]
+    st.success(f"Archivo cargado correctamente: {uploaded.name}")
 
-    st.markdown("#### 📥 Parámetros de entrada")
-    resultado = None
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Filas", f"{df.shape[0]:,}")
+    col2.metric("Columnas", f"{df.shape[1]}")
+    col3.metric("Tamaño estimado",
+                f"{df.memory_usage(deep=True).sum() / 1024**2:.1f} MB")
 
-    # ── Disponibilidad del sistema
-    if clave == "disponibilidad":
-        st.markdown("Calcula qué porcentaje del tiempo un sistema estuvo disponible (uptime).")
-        tiempo_total = st.number_input("Tiempo total del período (horas)", min_value=0.1, value=720.0, step=1.0)
-        tiempo_caida = st.number_input("Tiempo de caída (horas)", min_value=0.0, value=2.0, step=0.1)
+    st.markdown("### Vista previa (primeras 5 filas)")
+    st.dataframe(df.head(), use_container_width=True)
 
-        if st.button("▶️ Calcular", use_container_width=True):
-            try:
-                resultado = calcular_disponibilidad_sistema(tiempo_total, tiempo_caida)
-                st.metric("Disponibilidad del sistema", f"{resultado['disponibilidad_pct']}%")
-                if resultado["disponibilidad_pct"] >= 99.9:
-                    st.success("✅ Excelente disponibilidad (≥ 99.9% – nivel enterprise)")
-                elif resultado["disponibilidad_pct"] >= 99.0:
-                    st.info("ℹ️ Buena disponibilidad (≥ 99%)")
-                else:
-                    st.warning("⚠️ Disponibilidad por debajo del estándar")
-                st.session_state.historial_funciones.append({
-                    "Función": funcion_seleccionada,
-                    "Parámetros": f"Total={tiempo_total}h, Caída={tiempo_caida}h",
-                    **resultado,
-                })
-            except ValueError as e:
-                st.error(f"Error: {e}")
+    st.markdown("### Tipos de datos")
+    dtype_df = pd.DataFrame({"Tipo": df.dtypes.astype(str),
+                              "Nulos": df.isnull().sum()})
+    st.dataframe(dtype_df, use_container_width=True)
 
-    # ── Tiempo de transferencia
-    elif clave == "transferencia":
-        st.markdown("Estima cuánto tardará en transferirse un archivo según el ancho de banda.")
-        tamano_mb = st.number_input("Tamaño del archivo (MB)", min_value=0.01, value=500.0, step=1.0)
-        velocidad_mbps = st.number_input("Velocidad de red (Mbps)", min_value=0.01, value=100.0, step=1.0)
 
-        if st.button("▶️ Calcular", use_container_width=True):
-            try:
-                resultado = calcular_tiempo_transferencia_archivo(tamano_mb, velocidad_mbps)
-                c1, c2 = st.columns(2)
-                c1.metric("⏱️ Tiempo estimado (seg)", f"{resultado['tiempo_segundos']} s")
-                c2.metric("⏱️ Tiempo estimado (min)", f"{resultado['tiempo_minutos']} min")
-                st.session_state.historial_funciones.append({
-                    "Función": funcion_seleccionada,
-                    "Parámetros": f"Archivo={tamano_mb}MB, Velocidad={velocidad_mbps}Mbps",
-                    **resultado,
-                })
-            except ValueError as e:
-                st.error(f"Error: {e}")
+# ─────────────────────────────────────────────
+# MÓDULO 3 – EDA INFORMACIÓN
+# ─────────────────────────────────────────────
+elif menu == "EDA - Información":
+    df = get_df()
+    analyzer = DataAnalyzer(df)
+    st.title("EDA — Información General")
 
-    # ── Tasa de error en transacciones
-    elif clave == "tasa_error":
-        st.markdown("Calcula qué porcentaje de transacciones fallaron en un sistema.")
-        fallidas = st.number_input("Transacciones fallidas", min_value=0, value=12, step=1)
-        totales = st.number_input("Transacciones totales", min_value=1, value=10000, step=100)
+    tabs = st.tabs(["Ítem 1: Dataset Info", "Ítem 2: Variables",
+                    "Ítem 3: Estadísticas", "Ítem 4: Valores Faltantes"])
 
-        if st.button("▶️ Calcular", use_container_width=True):
-            try:
-                resultado = calcular_tasa_error_transacciones(int(fallidas), int(totales))
-                c1, c2 = st.columns(2)
-                c1.metric("❌ Tasa de error", f"{resultado['tasa_error_pct']}%")
-                c2.metric("✅ Tasa de éxito", f"{resultado['tasa_exito_pct']}%")
-                if resultado["tasa_error_pct"] <= 0.1:
-                    st.success("✅ Tasa de error excelente (≤ 0.1%)")
-                elif resultado["tasa_error_pct"] <= 1.0:
-                    st.info("ℹ️ Tasa de error aceptable")
-                else:
-                    st.error("🚨 Tasa de error alta — requiere atención")
-                st.session_state.historial_funciones.append({
-                    "Función": funcion_seleccionada,
-                    "Parámetros": f"Fallidas={int(fallidas)}, Totales={int(totales)}",
-                    **resultado,
-                })
-            except ValueError as e:
-                st.error(f"Error: {e}")
-
-    # ── Almacenamiento para respaldo
-    elif clave == "almacenamiento":
-        st.markdown("Estima el espacio de almacenamiento necesario para respaldar archivos de usuarios.")
-        n_usuarios = st.number_input("Número de usuarios", min_value=1, value=100, step=1)
-        archivos_usuario = st.number_input("Archivos por usuario", min_value=1, value=50, step=1)
-        tamano_prom_mb = st.number_input("Tamaño promedio por archivo (MB)", min_value=0.01, value=5.0, step=0.5)
-        factor_respaldo = st.number_input("Factor de respaldo (redundancia)", min_value=1.0, value=2.0, step=0.5,
-                                          help="Ej: 2 = doble copia, 3 = triple copia")
-
-        if st.button("▶️ Calcular", use_container_width=True):
-            try:
-                resultado = calcular_almacenamiento_respaldo(int(n_usuarios), int(archivos_usuario), tamano_prom_mb, factor_respaldo)
-                c1, c2 = st.columns(2)
-                c1.metric("💾 Almacenamiento estimado (MB)", f"{resultado['almacenamiento_estimado_mb']:,}")
-                c2.metric("💾 Almacenamiento estimado (GB)", f"{resultado['almacenamiento_estimado_gb']:,}")
-                st.session_state.historial_funciones.append({
-                    "Función": funcion_seleccionada,
-                    "Parámetros": f"Usuarios={int(n_usuarios)}, Archivos={int(archivos_usuario)}, Factor={factor_respaldo}x",
-                    **resultado,
-                })
-            except ValueError as e:
-                st.error(f"Error: {e}")
-
-    # ── Métricas ML
-    elif clave == "metricas_ml":
-        st.markdown("Evalúa el rendimiento de un modelo de clasificación con Precisión, Recall y F1-Score.")
-        tp = st.number_input("True Positives (TP)", min_value=0, value=85, step=1)
-        fp = st.number_input("False Positives (FP)", min_value=0, value=10, step=1)
-        fn = st.number_input("False Negatives (FN)", min_value=0, value=5, step=1)
-
-        if st.button("▶️ Calcular", use_container_width=True):
-            try:
-                resultado = calcular_metricas_clasificacion(int(tp), int(fp), int(fn))
-                c1, c2, c3 = st.columns(3)
-                c1.metric("🎯 Precisión", resultado["precision"])
-                c2.metric("📡 Recall", resultado["recall"])
-                c3.metric("⚖️ F1-Score", resultado["f1_score"])
-                st.session_state.historial_funciones.append({
-                    "Función": funcion_seleccionada,
-                    "Parámetros": f"TP={int(tp)}, FP={int(fp)}, FN={int(fn)}",
-                    **resultado,
-                })
-            except ValueError as e:
-                st.error(f"Error: {e}")
-
-    # Historial
-    st.markdown("---")
-    st.subheader("📜 Historial de cálculos")
-    if st.session_state.historial_funciones:
-        df_hist = pd.DataFrame(st.session_state.historial_funciones)
-        st.dataframe(df_hist, use_container_width=True, hide_index=True)
-        if st.button("🗑️ Limpiar historial"):
-            st.session_state.historial_funciones = []
-            st.rerun()
-    else:
-        st.info("Aún no hay cálculos en el historial.")
-
-elif pagina == "🗄️ Ejercicio 4":
-    
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    st.sidebar.image("jmosquera.jpeg", width=100)
-    st.sidebar.write("**Nombre:** José Alex Mosquera Amaro")
-    st.sidebar.write("**Linkedin:** https://www.linkedin.com/in/josemosquera/")
-    
-    st.title("🗄️ Ejercicio 4 – Gestión de Servidores (CRUD con clase Servidor)")
-
-    st.markdown(
-        """
-        **Descripción:** CRUD completo usando la clase `Servidor` de `libreri_a_clases_proyecto1.py`.
-        Puedes **Crear**, **Leer**, **Actualizar** y **Eliminar** registros de servidores.
-        """
-    )
-    st.markdown("---")
-
-    # Inicializar almacenamiento de servidores
-    if "servidores" not in st.session_state:
-        st.session_state.servidores = {}  # dict: nombre → dict de atributos
-
-    tabs = st.tabs(["➕ Crear", "📋 Ver todos", "✏️ Actualizar", "🗑️ Eliminar"])
-
-    # ── TAB CREAR
+    # ÍTEM 1
     with tabs[0]:
-        st.subheader("➕ Registrar nuevo servidor")
-        with st.container():
-            nombre_sv = st.text_input("Nombre del servidor", placeholder="Ej: web-server-01")
-            col1, col2 = st.columns(2)
-            with col1:
-                tiempo_total = st.number_input("Tiempo total del período (h)", min_value=0.1, value=720.0, step=1.0, key="c_tt")
-                almacenamiento_total = st.number_input("Almacenamiento total (GB)", min_value=0.1, value=500.0, step=10.0, key="c_at")
-            with col2:
-                tiempo_caida = st.number_input("Tiempo de caída (h)", min_value=0.0, value=0.0, step=0.1, key="c_tc")
-                almacenamiento_usado = st.number_input("Almacenamiento usado (GB)", min_value=0.0, value=120.0, step=5.0, key="c_au")
+        st.header("Ítem 1 — Información general del dataset")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Filas", f"{df.shape[0]:,}")
+        col2.metric("Columnas", f"{df.shape[1]}")
+        col3.metric("Valores nulos totales", int(df.isnull().sum().sum()))
 
-            if st.button("💾 Crear servidor", use_container_width=True):
-                if nombre_sv.strip() == "":
-                    st.warning("⚠️ Ingresa el nombre del servidor.")
-                elif nombre_sv.strip() in st.session_state.servidores:
-                    st.error("❌ Ya existe un servidor con ese nombre.")
-                else:
-                    try:
-                        sv = Servidor(nombre_sv.strip(), tiempo_total, tiempo_caida, almacenamiento_total, almacenamiento_usado)
-                        st.session_state.servidores[nombre_sv.strip()] = {
-                            "nombre": nombre_sv.strip(),
-                            "tiempo_total_h": tiempo_total,
-                            "tiempo_caida_h": tiempo_caida,
-                            "almacenamiento_total_gb": almacenamiento_total,
-                            "almacenamiento_usado_gb": almacenamiento_usado,
-                            **sv.resumen(),
-                        }
-                        st.success(f"✅ Servidor '{nombre_sv.strip()}' creado correctamente.")
-                    except ValueError as e:
-                        st.error(f"Error de validación: {e}")
+        st.markdown("#### Tipos de datos por columna")
+        buf = io.StringIO()
+        df.info(buf=buf)
+        st.code(buf.getvalue(), language="text")
 
-    # ── TAB VER TODOS
+        st.write("""
+        **Discusión:** el dataset no presenta valores nulos. Todas las 21
+        variables están completamente pobladas, lo que facilita el análisis
+        sin necesidad de imputación previa.
+        """)
+
+    # ÍTEM 2
     with tabs[1]:
-        st.subheader("📋 Servidores registrados")
-        if st.session_state.servidores:
-            filas = []
-            for sv_data in st.session_state.servidores.values():
-                filas.append({
-                    "Nombre": sv_data["nombre"],
-                    "Disponibilidad (%)": sv_data["disponibilidad_pct"],
-                    "Uso Almac. (%)": sv_data["uso_almacenamiento_pct"],
-                    "Estado": sv_data["estado"],
-                    "Total Almac. (GB)": sv_data["almacenamiento_total_gb"],
-                    "Usado (GB)": sv_data["almacenamiento_usado_gb"],
-                })
-            df_sv = pd.DataFrame(filas)
+        st.header("Ítem 2 — Clasificación de variables")
+        num_cols, cat_cols = analyzer.classify_variables()
 
-            # Colorear estado
-            def color_estado(val):
-                colores = {"Óptimo": "background-color: #d4edda", "Advertencia": "background-color: #fff3cd", "Crítico": "background-color: #f8d7da"}
-                return colores.get(val, "")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"**Variables numéricas ({len(num_cols)}):**")
+            st.write(num_cols)
+        with col2:
+            st.write(f"**Variables categóricas ({len(cat_cols)}):**")
+            st.write(cat_cols)
 
-            st.dataframe(
-                df_sv.style.map(color_estado, subset=["Estado"]),
-                use_container_width=True,
-                hide_index=True,
-            )
+        resumen = pd.DataFrame({
+            "Variable": df.columns,
+            "Tipo pandas": df.dtypes.astype(str).values,
+            "Categoría": ["Numérica" if c in num_cols else "Categórica"
+                          for c in df.columns],
+            "Únicos": [df[c].nunique() for c in df.columns],
+        })
+        st.dataframe(resumen, use_container_width=True, hide_index=True)
 
-            # Métricas globales
-            st.markdown("---")
-            c1, c2, c3 = st.columns(3)
-            c1.metric("🖥️ Total servidores", len(filas))
-            optimos = sum(1 for r in filas if r["Estado"] == "Óptimo")
-            c2.metric("✅ En estado Óptimo", optimos)
-            criticos = sum(1 for r in filas if r["Estado"] == "Crítico")
-            c3.metric("🚨 En estado Crítico", criticos)
-        else:
-            st.info("No hay servidores registrados aún. Ve a ➕ Crear para empezar.")
-
-    # ── TAB ACTUALIZAR
+    # ÍTEM 3
     with tabs[2]:
-        st.subheader("✏️ Actualizar servidor existente")
-        if not st.session_state.servidores:
-            st.info("No hay servidores para actualizar.")
-        else:
-            sv_nombre = st.selectbox("Selecciona el servidor a actualizar", list(st.session_state.servidores.keys()), key="upd_select")
-            sv_actual = st.session_state.servidores[sv_nombre]
+        st.header("Ítem 3 — Estadísticas descriptivas")
+        num_cols, _ = analyzer.classify_variables()
+        show_cols = st.multiselect(
+            "Selecciona variables numéricas a describir",
+            options=num_cols, default=num_cols[:6],
+        )
+        if show_cols:
+            stats = df[show_cols].describe().T.round(2)
+            stats["mediana"] = df[show_cols].median().round(2)
+            stats["moda"] = df[show_cols].mode().iloc[0].round(2)
+            st.dataframe(stats, use_container_width=True)
 
-            st.markdown(f"**Estado actual:** `{sv_actual['estado']}` | Disponibilidad: `{sv_actual['disponibilidad_pct']}%` | Uso almac.: `{sv_actual['uso_almacenamiento_pct']}%`")
-            st.markdown("Modifica los valores que necesites:")
+            st.write(f"""
+            **Interpretación:** la variable `duration` tiene media de
+            {df['duration'].mean():.0f}s pero mediana de
+            {df['duration'].median():.0f}s, lo cual indica sesgo a la derecha
+            por llamadas muy largas. `age` se concentra alrededor de los 40 años.
+            """)
 
-            col1, col2 = st.columns(2)
-            with col1:
-                new_tt = st.number_input("Tiempo total (h)", min_value=0.1, value=float(sv_actual["tiempo_total_h"]), key="u_tt")
-                new_at = st.number_input("Almacenamiento total (GB)", min_value=0.1, value=float(sv_actual["almacenamiento_total_gb"]), key="u_at")
-            with col2:
-                new_tc = st.number_input("Tiempo caída (h)", min_value=0.0, value=float(sv_actual["tiempo_caida_h"]), key="u_tc")
-                new_au = st.number_input("Almacenamiento usado (GB)", min_value=0.0, value=float(sv_actual["almacenamiento_usado_gb"]), key="u_au")
-
-            if st.button("💾 Guardar cambios", use_container_width=True):
-                try:
-                    sv_upd = Servidor(sv_nombre, new_tt, new_tc, new_at, new_au)
-                    st.session_state.servidores[sv_nombre] = {
-                        "nombre": sv_nombre,
-                        "tiempo_total_h": new_tt,
-                        "tiempo_caida_h": new_tc,
-                        "almacenamiento_total_gb": new_at,
-                        "almacenamiento_usado_gb": new_au,
-                        **sv_upd.resumen(),
-                    }
-                    st.success(f"✅ Servidor '{sv_nombre}' actualizado. Nuevo estado: **{sv_upd.estado_servidor()}**")
-                except ValueError as e:
-                    st.error(f"Error de validación: {e}")
-
-    # ── TAB ELIMINAR
+    # ÍTEM 4
     with tabs[3]:
-        st.subheader("🗑️ Eliminar servidor")
-        if not st.session_state.servidores:
-            st.info("No hay servidores para eliminar.")
-        else:
-            sv_del = st.selectbox("Selecciona el servidor a eliminar", list(st.session_state.servidores.keys()), key="del_select")
-            sv_info = st.session_state.servidores[sv_del]
-            st.warning(f"⚠️ Estás a punto de eliminar: **{sv_del}** (Estado: {sv_info['estado']}). Esta acción no se puede deshacer.")
+        st.header("Ítem 4 — Análisis de valores faltantes")
+        miss = analyzer.missing_summary()
+        st.dataframe(miss, use_container_width=True)
 
-            if st.button("🗑️ Confirmar eliminación", use_container_width=True):
-                del st.session_state.servidores[sv_del]
-                st.success(f"✅ Servidor '{sv_del}' eliminado correctamente.")
-                st.rerun()
+        total_miss = miss["Nulos"].sum()
+        if total_miss == 0:
+            st.success("El dataset no presenta valores nulos explícitos (NaN).")
+            st.write("""
+            **Discusión:** la ausencia de nulos puede indicar que el dataset ya
+            fue preprocesado, o que los valores desconocidos se codificaron
+            como categorías explícitas (ej. "unknown").
+            """)
+
+            _, cat_cols = analyzer.classify_variables()
+            unk = {c: (df[c] == "unknown").sum()
+                   for c in cat_cols if "unknown" in df[c].values}
+            if unk:
+                st.markdown("#### Valores 'unknown' por variable categórica")
+                unk_df = pd.DataFrame.from_dict(
+                    unk, orient="index", columns=["Conteo 'unknown'"])
+                unk_df["% del total"] = (unk_df["Conteo 'unknown'"] / len(df) * 100).round(2)
+                st.dataframe(unk_df, use_container_width=True)
+
+
+# ─────────────────────────────────────────────
+# MÓDULO 4 – DISTRIBUCIONES
+# ─────────────────────────────────────────────
+elif menu == "EDA - Distribuciones":
+    df = get_df()
+    analyzer = DataAnalyzer(df)
+    st.title("EDA — Distribuciones")
+
+    tabs = st.tabs(["Ítem 5: Numéricas", "Ítem 6: Categóricas"])
+
+    # ÍTEM 5
+    with tabs[0]:
+        st.header("Ítem 5 — Distribución de variables numéricas")
+        num_cols, _ = analyzer.classify_variables()
+
+        sel_num = st.selectbox("Variable numérica", num_cols, index=0)
+        bins = st.slider("Número de bins", 10, 80, 30)
+
+        render_fig(analyzer.fig_distribution(sel_num, bins=bins))
+
+        data = df[sel_num].dropna()
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Media", f"{data.mean():.2f}")
+        col2.metric("Mediana", f"{data.median():.2f}")
+        col3.metric("Desv. Std", f"{data.std():.2f}")
+        col4.metric("Sesgo", f"{data.skew():.2f}")
+
+        st.markdown("#### Panel completo de variables numéricas")
+        fig2, axes = plt.subplots(2, 5, figsize=(14, 5))
+        for ax, col in zip(axes.flat, num_cols):
+            ax.hist(df[col].dropna(), bins=25, edgecolor="white")
+            ax.set_title(col, fontsize=8)
+            ax.grid(axis="y", alpha=0.25)
+            ax.tick_params(labelsize=7)
+        fig2.tight_layout()
+        render_fig(fig2)
+
+        st.write("""
+        **Interpretación visual:** `duration` y `campaign` presentan fuerte
+        sesgo positivo: la mayoría de los contactos son breves y pocos. Las
+        variables macroeconómicas (`euribor3m`, `emp.var.rate`) muestran
+        distribuciones bimodales asociadas a ciclos económicos.
+        """)
+
+    # ÍTEM 6
+    with tabs[1]:
+        st.header("Ítem 6 — Análisis de variables categóricas")
+        _, cat_cols = analyzer.classify_variables()
+
+        sel_cat = st.selectbox("Variable categórica", cat_cols,
+                               index=cat_cols.index("job") if "job" in cat_cols else 0)
+        top_n = st.slider("Top N categorías", 5, 20, 10)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            render_fig(analyzer.fig_barplot(sel_cat, top_n=top_n, horizontal=True))
+        with col2:
+            vc = df[sel_cat].value_counts().head(top_n)
+            pct = (vc / len(df) * 100).round(2)
+            st.dataframe(pd.DataFrame({"Frecuencia": vc, "%": pct}),
+                         use_container_width=True)
+
+        st.markdown("#### Variable objetivo `y` (tasa de conversión)")
+        y_vc = df["y"].value_counts()
+        fig_p, ax_p = plt.subplots(figsize=(4, 4))
+        ax_p.pie(y_vc.values,
+                 labels=[f"{l} ({v:,}, {v/len(df)*100:.1f}%)"
+                         for l, v in zip(y_vc.index, y_vc.values)],
+                 startangle=90)
+        ax_p.set_title("Distribución de y")
+        render_fig(fig_p)
+
+        st.write(f"""
+        **Discusión:** solo el {y_vc['yes']/len(df)*100:.1f}% de los clientes
+        aceptó la campaña, lo que confirma el desbalanceo de clases. El análisis
+        debe enfocarse en caracterizar ese segmento minoritario.
+        """)
+
+
+# ─────────────────────────────────────────────
+# MÓDULO 5 – BIVARIADO
+# ─────────────────────────────────────────────
+elif menu == "EDA - Bivariado":
+    df = get_df()
+    analyzer = DataAnalyzer(df)
+    st.title("EDA — Análisis Bivariado")
+
+    tabs = st.tabs(["Ítem 7: Numérico vs y",
+                    "Ítem 8: Categórico vs y",
+                    "Extra: Correlaciones"])
+
+    # ÍTEM 7
+    with tabs[0]:
+        st.header("Ítem 7 — Numérico vs Categórico (y)")
+        num_cols, _ = analyzer.classify_variables()
+        sel = st.selectbox("Variable numérica", num_cols,
+                           index=num_cols.index("duration") if "duration" in num_cols else 0)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            render_fig(analyzer.fig_boxplot(sel, "y"))
+        with col2:
+            grp = df.groupby("y")[sel].agg(["mean", "median", "std"]).round(2)
+            grp.columns = ["Media", "Mediana", "Desv. Std"]
+            st.dataframe(grp, use_container_width=True)
+            diff_mean = grp.loc["yes", "Media"] - grp.loc["no", "Media"]
+            st.metric(f"Diferencia de medias (yes - no) en {sel}", f"{diff_mean:+.2f}")
+
+        st.markdown("#### Distribución de edad por resultado (y)")
+        fig_age, ax_age = plt.subplots(figsize=(7, 3.5))
+        for val in ["yes", "no"]:
+            ax_age.hist(df.loc[df["y"] == val, "age"], bins=30,
+                        alpha=0.6, label=val, density=True)
+        ax_age.set_xlabel("Edad")
+        ax_age.set_ylabel("Densidad")
+        ax_age.set_title("Edad según resultado de campaña")
+        ax_age.legend()
+        ax_age.grid(axis="y", alpha=0.3)
+        fig_age.tight_layout()
+        render_fig(fig_age)
+
+        st.write("""
+        **Interpretación:** los clientes que aceptaron (`yes`) tienden a tener
+        mayor duración de llamada. Clientes en los extremos de edad (jóvenes
+        menores de 25 y mayores de 60) muestran mayor tasa de conversión.
+        """)
+
+    # ÍTEM 8
+    with tabs[1]:
+        st.header("Ítem 8 — Categórico vs Categórico (y)")
+        _, cat_cols = analyzer.classify_variables()
+        cat_no_y = [c for c in cat_cols if c != "y"]
+        sel_cat = st.selectbox("Variable categórica", cat_no_y,
+                               index=cat_no_y.index("education") if "education" in cat_no_y else 0)
+
+        col1, col2 = st.columns([3, 2])
+        with col1:
+            render_fig(analyzer.fig_crosstab_pct(sel_cat, "y"))
+        with col2:
+            ct_abs = pd.crosstab(df[sel_cat], df["y"])
+            ct_pct = (ct_abs.div(ct_abs.sum(axis=1), axis=0) * 100).round(2)
+            ct_pct.columns = ["no (%)", "yes (%)"]
+            st.dataframe(ct_pct.sort_values("yes (%)", ascending=False),
+                         use_container_width=True)
+
+        st.write(f"""
+        **Discusión:** en `{sel_cat}` se observan diferencias claras en la tasa
+        de conversión entre categorías. Segmentar la campaña por este atributo
+        podría mejorar la efectividad.
+        """)
+
+    # EXTRA: CORRELACIONES
+    with tabs[2]:
+        st.header("Matriz de correlación")
+        num_cols, _ = analyzer.classify_variables()
+        sel_corr = st.multiselect("Columnas a correlacionar", num_cols, default=num_cols)
+        if len(sel_corr) >= 2:
+            render_fig(analyzer.fig_correlation(sel_corr))
+            st.write("""
+            **Interpretación:** `euribor3m`, `emp.var.rate` y `nr.employed`
+            tienen alta correlación entre sí (contexto macroeconómico). Usar
+            solo una de ellas en modelos evitaría problemas de multicolinealidad.
+            """)
+
+
+# ─────────────────────────────────────────────
+# MÓDULO 6 – ANÁLISIS DINÁMICO
+# ─────────────────────────────────────────────
+elif menu == "EDA - Análisis Dinámico":
+    df = get_df()
+    analyzer = DataAnalyzer(df)
+    st.title("EDA — Análisis Dinámico (Ítem 9)")
+
+    st.write("Configura el análisis seleccionando las variables de interés.")
+
+    num_cols, cat_cols = analyzer.classify_variables()
+    cat_no_y = [c for c in cat_cols if c != "y"]
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        eje_x = st.selectbox("Variable X (categórica o numérica)", cat_no_y + num_cols, index=0)
+    with col2:
+        eje_y = st.selectbox("Variable Y (numérica o resultado)", num_cols + ["y"], index=0)
+    with col3:
+        filtro_y = st.multiselect("Filtrar por resultado (y)", ["yes", "no"], default=["yes", "no"])
+
+    min_age, max_age = int(df["age"].min()), int(df["age"].max())
+    age_range = st.slider("Rango de edad", min_age, max_age, (min_age, max_age))
+    mostrar_tabla = st.checkbox("Mostrar tabla de datos agrupados", value=False)
+
+    df_f = df[(df["y"].isin(filtro_y)) &
+              (df["age"] >= age_range[0]) &
+              (df["age"] <= age_range[1])]
+
+    st.write(f"Registros filtrados: **{len(df_f):,}** de {len(df):,}")
+
+    if df_f.empty:
+        st.warning("Sin datos para los filtros seleccionados.")
+    else:
+        if eje_x in num_cols and eje_y in num_cols:
+            fig_sc, ax_sc = plt.subplots(figsize=(7, 4))
+            for val in filtro_y:
+                sub = df_f[df_f["y"] == val]
+                ax_sc.scatter(sub[eje_x], sub[eje_y], alpha=0.3, s=10, label=val)
+            ax_sc.set_xlabel(eje_x)
+            ax_sc.set_ylabel(eje_y)
+            ax_sc.set_title(f"{eje_x} vs {eje_y}")
+            ax_sc.legend(title="y")
+            ax_sc.grid(alpha=0.3)
+            fig_sc.tight_layout()
+            render_fig(fig_sc)
+        elif eje_x in cat_no_y:
+            if eje_y == "y":
+                render_fig(analyzer.fig_crosstab_pct(eje_x, "y"))
+            else:
+                render_fig(analyzer.fig_boxplot(eje_y, eje_x))
+
+        if mostrar_tabla and eje_x in cat_no_y and eje_y in num_cols:
+            tbl = df_f.groupby(eje_x)[eje_y].agg(["mean", "median", "count"]).round(2)
+            tbl.columns = ["Media", "Mediana", "N"]
+            tbl = tbl.sort_values("Media", ascending=False)
+            st.dataframe(tbl, use_container_width=True)
+
+
+# ─────────────────────────────────────────────
+# MÓDULO 7 – CONCLUSIONES
+# ─────────────────────────────────────────────
+elif menu == "Conclusiones":
+    df = get_df()
+    st.title("Hallazgos Clave y Conclusiones (Ítem 10)")
+
+    total = len(df)
+    yes_rate = df["y"].value_counts(normalize=True)["yes"] * 100
+    avg_dur_yes = df.loc[df["y"] == "yes", "duration"].mean()
+    avg_dur_no = df.loc[df["y"] == "no", "duration"].mean()
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total registros", f"{total:,}")
+    col2.metric("Tasa conversión", f"{yes_rate:.1f}%")
+    col3.metric("Duración media YES", f"{avg_dur_yes:.0f}s")
+    col4.metric("Duración media NO", f"{avg_dur_no:.0f}s")
+
+    st.markdown("### Visualización resumen de hallazgos")
+
+    fig_sum, axes = plt.subplots(1, 3, figsize=(14, 4))
+
+    job_rate = (df[df["y"] == "yes"].groupby("job").size() /
+                df.groupby("job").size() * 100).sort_values(ascending=False)
+    axes[0].barh(job_rate.index, job_rate.values)
+    axes[0].set_title("Tasa de conversión por empleo (%)", fontsize=9)
+    axes[0].grid(axis="x", alpha=0.3)
+    axes[0].tick_params(labelsize=7)
+
+    month_order = ["jan", "feb", "mar", "apr", "may", "jun",
+                   "jul", "aug", "sep", "oct", "nov", "dec"]
+    mo = df[df["month"].isin(month_order)]
+    month_rate = (mo[mo["y"] == "yes"].groupby("month").size() /
+                  mo.groupby("month").size() * 100).reindex(month_order, fill_value=0)
+    axes[1].bar(month_rate.index, month_rate.values)
+    axes[1].set_title("Tasa de conversión por mes (%)", fontsize=9)
+    axes[1].grid(axis="y", alpha=0.3)
+    axes[1].tick_params(axis="x", rotation=45, labelsize=7)
+
+    pout_rate = (df[df["y"] == "yes"].groupby("poutcome").size() /
+                 df.groupby("poutcome").size() * 100).sort_values(ascending=False)
+    axes[2].bar(pout_rate.index, pout_rate.values)
+    axes[2].set_title("Tasa de conversión por resultado anterior (%)", fontsize=9)
+    axes[2].grid(axis="y", alpha=0.3)
+
+    fig_sum.tight_layout()
+    render_fig(fig_sum)
+
+    st.markdown("### Conclusiones finales")
+
+    conclusiones = [
+        ("1. La duración del contacto es el predictor más relevante.",
+         "Los clientes que aceptaron la campaña tuvieron llamadas significativamente "
+         f"más largas (media {avg_dur_yes:.0f}s vs {avg_dur_no:.0f}s). Aunque la "
+         "duración no se conoce antes de la llamada, indica que mantener "
+         "conversaciones productivas es clave para la conversión."),
+        ("2. Los meses de menor actividad macroeconómica son más efectivos.",
+         "Marzo, septiembre, octubre y diciembre muestran las tasas de conversión "
+         "más altas. Esto coincide con periodos de euribor3m bajo, donde los "
+         "depósitos a plazo resultan más atractivos para el cliente."),
+        ("3. El resultado de la campaña anterior es altamente predictivo.",
+         "Los clientes con poutcome = success convierten a una tasa muy superior "
+         "al resto. Priorizar la recontactación de clientes con historial positivo "
+         "puede mejorar directamente la efectividad de la campaña."),
+        ("4. El perfil de empleo influye significativamente en la conversión.",
+         "Los clientes con empleos de mayor cualificación (admin., management, "
+         "retired) presentan tasas de conversión más altas. Segmentar las "
+         "campañas por tipo de empleo permite asignar recursos comerciales con "
+         "mayor precisión."),
+        ("5. La alta concentración de contactos en mayo reduce la efectividad global.",
+         f"El {(df['month'] == 'may').mean()*100:.1f}% de los registros corresponden "
+         "a mayo, pero con una tasa de conversión por debajo de la media. "
+         "Redistribuir el esfuerzo hacia meses de mayor efectividad histórica "
+         "(marzo, septiembre, octubre) podría recuperar puntos porcentuales perdidos."),
+    ]
+
+    for titulo, texto in conclusiones:
+        st.markdown(f"**{titulo}**")
+        st.write(texto)
+        st.markdown("---")
